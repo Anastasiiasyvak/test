@@ -1,16 +1,36 @@
-# This is a sample Python script.
+from datetime import datetime
+import requests
+from fastapi import FastAPI, HTTPException
+import uvicorn
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+app = FastAPI()
 
+@app.get('/api/users/list')
+def get_user_list():
+    offset = 20
+    user_data = fetch_user_data(offset)
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+    user_list = [
+        {
+            "username": user['username'],
+            "userId": user['userId'],
+            "firstSeen": datetime.utcfromtimestamp(user['firstSeen']).strftime('%Y-%m-%d %H:%M:%S')
+        }
+        for user in user_data
+    ]
 
+    return user_list
 
-# Press the green button in the gutter to run the script.
+def fetch_user_data(offset):
+    url = f'https://sef.podkolzin.consulting/api/users/lastSeen?offset={offset}'
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json()
+        return data.get('data', [])
+    else:
+        return []
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
